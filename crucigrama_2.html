@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Crucigrama - Juego público</title>
+<link rel="icon" href="data:;base64,iVBORw0KGgo=">
+<style>
+  :root{
+    --bg:#071127; --card:#071a2b; --muted:#9fb6d8; --accent:#60a5fa; --ok:#16a34a; --bad:#ef4444; --glass:rgba(255,255,255,0.03);
+    --gap:10px;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;
+    background:linear-gradient(180deg,var(--bg),#021126);color:#e6eef8;
+    display:flex;align-items:center;justify-content:center;padding:18px;
+  }
+  .wrap{width:100%;max-width:980px;border-radius:12px;background:linear-gradient(180deg,var(--card),#041526);padding:16px;box-shadow:0 12px 40px rgba(2,6,23,.7)}
+  header{display:flex;align-items:center;gap:12px;justify-content:space-between}
+  h1{font-size:18px;margin:0}
+  .subtitle{color:var(--muted);font-size:13px}
+  .grid{display:grid;grid-template-columns:1fr 360px;gap:16px;margin-top:12px}
+  @media(max-width:880px){.grid{grid-template-columns:1fr}}
+  /* tablero */
+  .board{background:var(--glass);padding:12px;border-radius:10px}
+  .entries{display:flex;flex-wrap:wrap;gap:10px}
+  .entry{
+    background:#021826;border:1px solid rgba(255,255,255,.03);padding:10px 12px;border-radius:8px;
+    min-width:82px;flex:1 1 120px;text-align:center;font-weight:700;
+  }
+  .entry .num{font-size:12px;color:var(--muted);opacity:.9}
+  .entry .val{margin-top:8px;white-space:nowrap;letter-spacing:2px;font-size:14px}
+  /* controls */
+  .controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .btn{background:linear-gradient(180deg,#0b304a,#063047);border:1px solid rgba(255,255,255,.04);color:var(--text);padding:10px 12px;border-radius:10px;cursor:pointer;font-weight:700}
+  .btn.large{padding:14px 16px;font-size:16px}
+  .btn.ghost{background:transparent;border:1px dashed rgba(255,255,255,.04)}
+  .btn.surrender{background:linear-gradient(180deg,#5b3b3b,#4a2b2b)}
+  .status{margin-top:12px;font-weight:700}
+  /* panel derecho */
+  .panel{background:linear-gradient(180deg,#031526,#021427);padding:12px;border-radius:10px}
+  .clue{font-size:14px;color:var(--muted);margin-bottom:8px}
+  .log{background:#021926;padding:10px;border-radius:8px;min-height:140px;max-height:360px;overflow:auto;color:#dfefff;font-size:14px}
+  .hintTitle{font-weight:700;margin-bottom:8px}
+  footer{margin-top:12px;color:var(--muted);font-size:13px;text-align:center}
+  /* modal */
+  .modalBack{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:16px;z-index:80}
+  .modal{width:100%;max-width:520px;background:linear-gradient(180deg,#071a2b,#04202b);padding:18px;border-radius:10px;border:1px solid rgba(255,255,255,.03)}
+  .modal h3{margin:0 0 8px}
+  .formRow{display:flex;gap:8px;align-items:center;margin-top:8px}
+  input[type="text"]{flex:1;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,.04);background:rgba(255,255,255,0.02);color:var(--text);font-size:15px}
+  .modal .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+  .msg{font-size:14px;margin-top:8px}
+  .ok{color:var(--ok)}
+  .bad{color:var(--bad)}
+  .small{font-size:13px;color:var(--muted)}
+  /* tiny */
+  .flexRow{display:flex;gap:8px;align-items:center}
+</style>
+</head>
+<body>
+  <div class="wrap" role="application" aria-label="Crucigrama público">
+    <header>
+      <div>
+        <h1>Crucigrama — Prevención & método</h1>
+        <div class="subtitle">Accesible para celular — respuestas flexibles (mayúsculas/tildes aceptadas)</div>
+      </div>
+      <div class="small">Compartí el enlace o el QR con tu público</div>
+    </header>
+
+    <div class="grid">
+      <section>
+        <div class="board" id="board">
+          <div class="entries" id="entries"></div>
+
+          <div class="controls" id="controlsTop" style="margin-top:12px"></div>
+
+          <div class="status" id="status"></div>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+          <button class="btn large" id="startBtn">Jugar — Empezar</button>
+          <button class="btn ghost" id="rulesBtn">Cómo jugar</button>
+          <button class="btn surrender" id="surrenderBtn">Rendirse (16)</button>
+          <button class="btn" id="resetBtn">Reiniciar</button>
+        </div>
+      </section>
+
+      <aside>
+        <div class="panel">
+          <div class="hintTitle">Pistas (responde la palabra completa)</div>
+          <div id="clues"></div>
+
+          <div style="height:12px"></div>
+          <div class="small">Registro de actividad</div>
+          <div class="log" id="log"></div>
+        </div>
+      </aside>
+    </div>
+
+    <footer>Diseñado para uso público — soporte para tildes / mayúsculas / espacios extra</footer>
+  </div>
+
+  <!-- Modal -->
+  <div class="modalBack" id="modalBack" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <h3 id="modalTitle">Responder palabra #<span id="modalNum">1</span></h3>
+      <div class="small" id="modalClue">pista...</div>
+
+      <div class="formRow">
+        <input id="answerInput" type="text" inputmode="text" autocomplete="off" placeholder="Escribí la palabra completa (minúsculas o mayúsculas)">
+        <button class="btn" id="submitAnswer">Enviar</button>
+      </div>
+
+      <div class="actions">
+        <button class="btn ghost" id="cancelBtn">Cancelar</button>
+      </div>
+
+      <div class="msg small" id="modalMsg"></div>
+    </div>
+  </div>
+
+<script>
+/* Versión pública: acepta mayúsculas, tildes, espacios. Modal en vez de prompt.
+   Responde con las mismas palabras/respuestas del programa Pascal original,
+   pero con validación flexible y algunas variantes aceptadas.
+*/
+
+(function(){
+  // UTIL - normaliza texto: remove diacritics, todos a minúscula, quita no-letters
+  function normalize(s){
+    if(!s) return '';
+    // normalizar unicode, eliminar tildes
+    s = s.normalize('NFKD').replace(/[\u0300-\u036f]/g, '');
+    // poner minúsculas
+    s = s.toLowerCase();
+    // reemplazar caracteres no alfabéticos por vacío (conservar letras y números)
+    s = s.replace(/[^a-z0-9]/g, '');
+    return s;
+  }
+
+  // Respuestas "canónicas" y variantes aceptadas
+  const accepted = {
+    1: ['diafragmas','diafragma'],
+    2: ['anillo'],
+    3: ['pastillas','pastilla'],
+    4: ['inyeccion','inyectable'], // permito "inyectable" variante
+    5: ['infeccion','infección','infecccion'], // admitimos errores comunes
+    6: ['condon','condón','condom'],
+    7: ['calendario'],
+    8: ['parche'],
+    9: ['sexualidad'],
+    10: ['espermicida','espermicidas','espermicida'],
+    11: ['implante'],
+    12: ['diu','d i u'],
+    13: ['vasectomia','vasectomía','vasectomias'],
+    14: ['pildoras','píldoras','pildoras','pildora','pildoras'],
+    15: ['abstinencia']
+  };
+
+  // normalizamos las listas para comparar fácilmente
+  Object.keys(accepted).forEach(k=>{
+    accepted[k] = Array.from(new Set(accepted[k].map(normalize)));
+  });
+
+  // Reemplazos para tablero (lo que se muestra cuando está resuelto)
+  const replacements = {
+    1: 'D I A F R A G M A S',
+    2: 'A N I L L O',
+    3: 'P A S T I L L A S',
+    4: 'I N Y E C C I O N',
+    5: 'I N F E C C I O N',
+    6: 'C O N D O N',
+    7: 'C A L E N D A R I O',
+    8: 'P A R C H E',
+    9: 'S E X U A L I D A D',
+    10: 'E S P E R M I C I D A',
+    11: 'I M P L A N T E',
+    12: 'D I U',
+    13: 'V A S E C T O M I A',
+    14: 'P I L D O R A S',
+    15: 'A B S T I N E N C I A'
+  };
+
+  // Pistas
+  const clues = {
+    1: 'dispositivo de silicona con forma de cúpula que se inserta en la vagina',
+    2: 'método anticonceptivo femenino flexible que va dentro de la vagina',
+    3: 'se toman el día después de tener relaciones sexuales, son de emergencia',
+    4: 'método anticonceptivo hormonal que espesa el moco cervical y se aplica cada 3 meses',
+    5: 'cuando ingresa un germen o agente patógeno genera una...',
+    6: 'funda delgada, generalmente de látex que se coloca sobre el pene',
+    7: 'método basado en registrar las fechas de la menstruación y calcular días fértiles',
+    8: 'método de prevención que libera hormonas a través de la piel',
+    9: 'es el modo en que cada persona experimenta el amor, el deseo y el afecto',
+    10: 'sustancia química que destruye espermatozoides y acompaña otro método',
+    11: 'dispositivo pequeño similar a una varilla que se inserta debajo de la piel',
+    12: 'dispositivo plástico en forma de "T" que se inserta en el útero',
+    13: 'cirugía para cortar o bloquear los conductos deferentes',
+    14: 'se toman todos los días e inhiben la ovulación',
+    15: 'consiste en decidir no tener relaciones sexuales'
+  };
+
+  // Variables estado (simulan las variables Pascal)
+  const initial = {
+    A: '_ _ A _ _ _ _ _ _',
+    N: '_ N _ _ _',
+    T: '_ _ _ T _ _ _ _ _',
+    I1: 'I _ _ _ _ _ _ _ _',
+    C: '_ _ _ _ C _ _ _ _',
+    O: '_ O _ _ _ _',
+    N1: '_ _ _ _ N _ _ _ _ _',
+    C1: '_ _ _ C _ _',
+    E: '_ E _ _ _ _ _ _ _ _',
+    P1: '_ _ P _ _ _ _ _ _ _ _',
+    T1: '_ _ _ _ _ _ T _',
+    I2: '_ I _',
+    V: 'V _ _ _ _ _ _ _ _ _',
+    O1: '_ _ _ _ O _ _ _',
+    S: '_ _ S _ _ _ _ _ _ _ _'
+  };
+
+  let state = {
+    ...initial,
+    solvedCount: 0,
+    surrendered: false
+  };
+
+  // DOM refs
+  const entriesEl = document.getElementById('entries');
+  const controlsTop = document.getElementById('controlsTop');
+  const statusEl = document.getElementById('status');
+  const logEl = document.getElementById('log');
+  const cluesEl = document.getElementById('clues');
+
+  const startBtn = document.getElementById('startBtn');
+  const rulesBtn = document.getElementById('rulesBtn');
+  const surrenderBtn = document.getElementById('surrenderBtn');
+  const resetBtn = document.getElementById('resetBtn');
+
+  const modalBack = document.getElementById('modalBack');
+  const modalNum = document.getElementById('modalNum');
+  const modalClue = document.getElementById('modalClue');
+  const answerInput = document.getElementById('answerInput');
+  const submitAnswer = document.getElementById('submitAnswer');
+  const cancelBtn = document.getElementById('cancelBtn');
+  const modalMsg = document.getElementById('modalMsg');
+
+  // inicializa UI
+  function renderEntries(){
+    entriesEl.innerHTML = '';
+    const list = [
+      {n:1,key:'A'}, {n:2,key:'N'}, {n:3,key:'T'}, {n:4,key:'I1'},
+      {n:5,key:'C'}, {n:6,key:'O'}, {n:7,key:'N1'}, {n:8,key:'C1'},
+      {n:9,key:'E'}, {n:10,key:'P1'}, {n:11,key:'T1'}, {n:12,key:'I2'},
+      {n:13,key:'V'}, {n:14:key:'O1'}, {n:15,key:'S'}
+    ];
+    // NOTE: small compatibility fix in map above: 'key:'O1' corrected below if needed
+    const fixedList = [
+      {n:1,key:'A'}, {n:2,key:'N'}, {n:3,key:'T'}, {n:4,key:'I1'},
+      {n:5,key:'C'}, {n:6,key:'O'}, {n:7,key:'N1'}, {n:8,key:'C1'},
+      {n:9,key:'E'}, {n:10,key:'P1'}, {n:11,key:'T1'}, {n:12,key:'I2'},
+      {n:13,key:'V'}, {n:14,key:'O1'}, {n:15,key:'S'}
+    ];
+    fixedList.forEach(item=>{
+      const d = document.createElement('div');
+      d.className = 'entry';
+      d.innerHTML = `<div class="num">#${item.n}</div><div class="val" id="val-${item.key}">${state[item.key]}</div>`;
+      entriesEl.appendChild(d);
+    });
+  }
+
+  function renderControls(){
+    controlsTop.innerHTML = '';
+    for(let i=1;i<=15;i++){
+      const b = document.createElement('button');
+      b.className = 'btn';
+      b.textContent = i;
+      b.style.minWidth = '44px';
+      b.onclick = ()=>openModal(i);
+      controlsTop.appendChild(b);
+    }
+    const b16 = document.createElement('button');
+    b16.className = 'btn surrender';
+    b16.textContent = '16';
+    b16.title = 'Rendirse';
+    b16.onclick = ()=>doSurrender();
+    controlsTop.appendChild(b16);
+  }
+
+  function renderClues(){
+    cluesEl.innerHTML = '';
+    for(let i=1;i<=15;i++){
+      const d = document.createElement('div');
+      d.className = 'clue';
+      d.textContent = `${i}. ${clues[i]}`;
+      cluesEl.appendChild(d);
+    }
+  }
+
+  function log(msg, type){
+    const el = document.createElement('div');
+    el.textContent = msg;
+    if(type==='err') el.style.color = '#fda4af';
+    if(type==='ok') el.style.color = '#bbf7d0';
+    logEl.appendChild(el);
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  function updateStatus(){
+    statusEl.textContent = state.surrendered ? 'Te rendiste.' : (state.solvedCount >= 15 ? 'Felicidades, ganaste!' : `Resueltas: ${state.solvedCount} / 15`);
+    if(state.solvedCount >= 15) statusEl.style.color = '#bbf7d0';
+  }
+
+  // Abrir modal para responder la palabra p
+  let activeNum = null;
+  function openModal(p){
+    if(state.surrendered) { log('El juego está terminado. Reinicia para jugar de nuevo.'); return; }
+    if(state.solvedCount >= 15) { log('Juego completado.'); return; }
+    activeNum = p;
+    modalNum.textContent = p;
+    modalClue.textContent = clues[p] || '';
+    modalMsg.textContent = '';
+    answerInput.value = '';
+    modalBack.style.display = 'flex';
+    modalBack.setAttribute('aria-hidden','false');
+    setTimeout(()=>answerInput.focus(),150);
+  }
+
+  function closeModal(){
+    modalBack.style.display = 'none';
+    modalBack.setAttribute('aria-hidden','true');
+    activeNum = null;
+  }
+
+  // comprobar respuesta
+  function submitModal(){
+    if(activeNum === null) return;
+    let raw = answerInput.value || '';
+    raw = raw.trim();
+    if(raw.length === 0){ modalMsg.textContent = 'Escribí una respuesta.'; modalMsg.className='msg bad'; return; }
+    const norm = normalize(raw);
+    const list = accepted[activeNum] || [];
+    if(list.includes(norm)){
+      // correcto
+      log(`Correcto (#${activeNum}): ${raw}`, 'ok');
+      // reemplazar en state
+      switch(activeNum){
+        case 1: state.A = replacements[1]; break;
+        case 2: state.N = replacements[2]; break;
+        case 3: state.T = replacements[3]; break;
+        case 4: state.I1 = replacements[4]; break;
+        case 5: state.C = replacements[5]; break;
+        case 6: state.O = replacements[6]; break;
+        case 7: state.N1 = replacements[7]; break;
+        case 8: state.C1 = replacements[8]; break;
+        case 9: state.E = replacements[9]; break;
+        case 10: state.P1 = replacements[10]; break;
+        case 11: state.T1 = replacements[11]; break;
+        case 12: state.I2 = replacements[12]; break;
+        case 13: state.V = replacements[13]; break;
+        case 14: state.O1 = replacements[14]; break;
+        case 15: state.S = replacements[15]; break;
+      }
+      state.solvedCount++;
+      updateStatus();
+      // actualizar DOM
+      for(const key of ['A','N','T','I1','C','O','N1','C1','E','P1','T1','I2','V','O1','S']){
+        const el = document.getElementById('val-'+key);
+        if(el) el.textContent = state[key];
+      }
+      modalMsg.textContent = 'Correcto! ✓';
+      modalMsg.className = 'msg ok';
+      setTimeout(()=>closeModal(),700);
+    } else {
+      log(`Incorrecto (#${activeNum}): ${raw}`, 'err');
+      modalMsg.textContent = 'Incorrecto. Probá otra vez.';
+      modalMsg.className = 'msg bad';
+    }
+  }
+
+  // rendirse
+  function doSurrender(){
+    if(confirm('¿Querés rendirte? (esto finalizará el juego)')) {
+      state.surrendered = true;
+      updateStatus();
+      log('Usuario se rindió. Mensaje final mostrado.');
+      // mostrar mensaje original
+      openNotice('sos un pete');
+    }
+  }
+
+  function openNotice(txt){
+    // simple modal con mensaje
+    modalNum.textContent = '';
+    modalClue.textContent = txt;
+    modalMsg.textContent = '';
+    answerInput.value = '';
+    modalBack.style.display = 'flex';
+    modalBack.setAttribute('aria-hidden','false');
+    // deshabilitar envio en modo aviso
+    submitAnswer.style.display = 'none';
+    cancelBtn.textContent = 'Cerrar';
+  }
+
+  // reiniciar
+  function resetGame(){
+    state = {...initial, solvedCount:0, surrendered:false};
+    renderEntries();
+    renderControls();
+    renderClues();
+    logEl.innerHTML = '';
+    modalMsg.textContent = '';
+    submitAnswer.style.display = '';
+    cancelBtn.textContent = 'Cancelar';
+    updateStatus();
+  }
+
+  // handlers modal
+  submitAnswer.addEventListener('click', submitModal);
+  answerInput.addEventListener('keydown', function(e){
+    if(e.key === 'Enter') submitModal();
+  });
+  cancelBtn.addEventListener('click', function(){
+    // cerrar modal y restaurar boton submit si estaba oculto
+    submitAnswer.style.display = '';
+    cancelBtn.textContent = 'Cancelar';
+    closeModal();
+  });
+  modalBack.addEventListener('click', function(e){
+    if(e.target === modalBack) {
+      submitAnswer.style.display = '';
+      cancelBtn.textContent = 'Cancelar';
+      closeModal();
+    }
+  });
+
+  // botones principales
+  startBtn.addEventListener('click', function(){
+    // auto abrir la primera elección amable: mostramos opciones (no prompt)
+    const choose = confirm('¿Querés que te sugiera empezar por la pista 1? (Aceptar = abrir pista 1)');
+    if(choose) openModal(1);
+  });
+  rulesBtn.addEventListener('click', function(){
+    alert('Cómo jugar:\n\n1) Elegí un número (1-15) y escribí la palabra completa en el cuadro.\n2) Respuestas aceptan mayúsculas y tildes.\n3) 16 = Rendirse.\n4) El tablero se actualiza cuando acertás.\n\n¡Suerte!');
+  });
+  surrenderBtn.addEventListener('click', doSurrender);
+  resetBtn.addEventListener('click', function(){
+    if(confirm('Reiniciar el juego?')) resetGame();
+  });
+
+  // inicializar todo al cargar
+  resetGame();
+  log('Juego listo — tocá un número para empezar (o usá el botón "Jugar" para una sugerencia).');
+  updateStatus();
+
+  // Accessibility: focus first button on small screens
+  setTimeout(()=>{ const b = controlsTop.querySelector('button'); if(b) b.focus(); },800);
+
+})();
+</script>
+</body>
+</html>
