@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Crucigrama — Juego público (Celeste)</title>
+<link rel="icon" href="data:;base64,iVBORw0KGgo=">
+<style>
+:root{
+  --bg:#eaf6ff;
+  --card:#ffffff;
+  --muted:#5b6b7a;
+  --accent:#5bb8f2;
+  --accent-2:#2e9ad9;
+  --success:#16a34a;
+  --danger:#ef4444;
+  --glass: rgba(255,255,255,0.75);
+  --radius:12px;
+  --shadow: 0 8px 24px rgba(26, 39, 57, 0.08);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;
+  background:linear-gradient(180deg,var(--bg),#dff4ff);color:#07304a;
+  display:flex;align-items:center;justify-content:center;padding:18px;
+}
+.wrap{width:100%;max-width:1100px;border-radius:16px;background:var(--card);padding:18px;box-shadow:var(--shadow);}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+h1{font-size:20px;margin:0;color:#05293e}
+.subtitle{color:var(--muted);font-size:13px}
+.grid{display:grid;grid-template-columns:1fr 340px;gap:16px;margin-top:12px}
+@media(max-width:880px){.grid{grid-template-columns:1fr}}
+.board{background:linear-gradient(180deg,#ffffff,#f6fdff);padding:14px;border-radius:12px;border:1px solid rgba(8,58,86,0.04)}
+.entries{display:flex;flex-wrap:wrap;gap:10px}
+.entry{
+  background:linear-gradient(180deg,#fbfeff,#f0fbff);
+  border:1px solid rgba(10,74,110,0.04);
+  padding:10px 12px;border-radius:10px;min-width:110px;flex:1 1 150px;
+  text-align:center;font-weight:700;color:#03314a;cursor:pointer;transition:transform .12s ease,box-shadow .12s ease;
+}
+.entry:hover{transform:translateY(-4px);box-shadow:0 8px 18px rgba(46,154,217,0.08)}
+.entry .num{font-size:12px;color:var(--muted);opacity:.95}
+.entry .val{margin-top:8px;letter-spacing:2px;font-size:15px}
+.controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.btn{background:var(--accent);border:none;color:white;padding:10px 12px;border-radius:10px;cursor:pointer;font-weight:700;box-shadow:0 6px 14px rgba(46,154,217,0.12)}
+.btn.ghost{background:transparent;border:1px dashed rgba(7,48,74,0.06);color:var(--accent-2);box-shadow:none;font-weight:600}
+.btn.surrender{background:#ffb4b4;color:#7a1b1b}
+.small{font-size:13px;color:var(--muted)}
+.panel{background:linear-gradient(180deg,#f7feff,#f0fbff);padding:12px;border-radius:12px;border:1px solid rgba(10,74,110,0.03)}
+.hintTitle{font-weight:800;margin-bottom:8px;color:#06314a}
+.clue{font-size:14px;color:#084159;margin-bottom:8px}
+.log{background:rgba(5,40,60,0.03);padding:8px;border-radius:8px;min-height:120px;max-height:280px;overflow:auto;font-size:13px;color:#043446}
+.modalBack{position:fixed;inset:0;background:rgba(2,14,20,0.35);display:none;align-items:center;justify-content:center;padding:12px;z-index:80}
+.modal{width:100%;max-width:520px;background:var(--card);padding:18px;border-radius:14px;border:1px solid rgba(8,58,86,0.06);box-shadow:var(--shadow)}
+.modal h3{margin:0 0 8px}
+.formRow{display:flex;gap:8px;align-items:center;margin-top:8px}
+input[type="text"]{flex:1;padding:10px;border-radius:10px;border:1px solid rgba(8,58,86,0.06);background:#f8feff;color:#05293e;font-size:15px}
+.modal .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+.msg{font-size:14px;margin-top:8px}
+.msg.ok{color:var(--success)}
+.msg.bad{color:var(--danger)}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.statCard{background:linear-gradient(180deg,#ffffff,#f6fdff);padding:10px;border-radius:10px;border:1px solid rgba(8,58,86,0.03);text-align:center}
+.statCard .num{font-weight:800;font-size:18px;color:#023047}
+.statCard .label{font-size:12px;color:var(--muted)}
+.progressWrap{margin-top:12px}
+.progressBar{height:12px;background:rgba(2,54,86,0.06);border-radius:999px;overflow:hidden}
+.progressFill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-2));width:0%;transition:width .4s ease}
+footer{margin-top:12px;color:var(--muted);font-size:13px;text-align:center}
+</style>
+</head>
+<body>
+  <div class="wrap" role="application" aria-label="Crucigrama público">
+    <header>
+      <div>
+        <h1>Crucigrama — Métodos y prevención</h1>
+        <div class="subtitle">Celeste suave — fácil para celulares</div>
+      </div>
+      <div class="small">Compartí el enlace o el QR con tu público</div>
+    </header>
+
+    <div class="grid">
+      <section>
+        <div class="board" id="board" aria-live="polite">
+          <div class="entries" id="entries" role="list"></div>
+
+          <div class="controls" id="controlsTop" aria-hidden="false"></div>
+
+          <div class="progressWrap">
+            <div class="small">Progreso</div>
+            <div class="progressBar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+              <div class="progressFill" id="progressFill"></div>
+            </div>
+          </div>
+
+          <div class="stats" id="statsArea" aria-hidden="false">
+            <div class="statCard">
+              <div class="num" id="statAttempts">0</div>
+              <div class="label">Intentos totales</div>
+            </div>
+            <div class="statCard">
+              <div class="num" id="statCorrect">0</div>
+              <div class="label">Correctas</div>
+            </div>
+            <div class="statCard">
+              <div class="num" id="statIncorrect">0</div>
+              <div class="label">Incorrectas</div>
+            </div>
+            <div class="statCard">
+              <div class="num" id="statAccuracy">0%</div>
+              <div class="label">Porcentaje</div>
+            </div>
+          </div>
+
+          <div class="status small" id="status"></div>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+          <button class="btn" id="startBtn">Jugar — Empezar</button>
+          <button class="btn ghost" id="rulesBtn">Cómo jugar</button>
+          <button class="btn surrender" id="surrenderBtn">Rendirse (16)</button>
+          <button class="btn" id="resetBtn">Reiniciar</button>
+        </div>
+      </section>
+
+      <aside>
+        <div class="panel">
+          <div class="hintTitle">Pistas (responde la palabra completa)</div>
+          <div id="clues"></div>
+
+          <div style="height:12px"></div>
+          <div class="small">Registro de actividad</div>
+          <div class="log" id="log" aria-live="polite"></div>
+        </div>
+      </aside>
+    </div>
+
+    <footer>Diseñado para público — acepta mayúsculas, tildes y espacios</footer>
+  </div>
+
+  <div class="modalBack" id="modalBack" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <h3 id="modalTitle">Responder palabra #<span id="modalNum">1</span></h3>
+      <div class="small" id="modalClue">pista...</div>
+
+      <div class="formRow">
+        <input id="answerInput" type="text" inputmode="text" autocomplete="off" placeholder="Escribí la palabra completa">
+        <button class="btn" id="submitAnswer">Enviar</button>
+      </div>
+
+      <div class="actions">
+        <button class="btn ghost" id="cancelBtn">Cancelar</button>
+      </div>
+
+      <div class="msg" id="modalMsg"></div>
+    </div>
+  </div>
+
+<script>
+function normalize(s){
+  if(!s) return '';
+  s = s.normalize('NFKD').replace(/[\u0300-\u036f]/g,'');
+  s = s.toLowerCase();
+  s = s.replace(/[^a-z0-9]/g,'');
+  return s;
+}
+const accepted = {
+  1: ['diafragmas','diafragma'],
+  2: ['anillo'],
+  3: ['pastillas','pastilla'],
+  4: ['inyeccion','inyectable'],
+  5: ['infeccion'],
+  6: ['condon','condom'],
+  7: ['calendario'],
+  8: ['parche'],
+  9: ['sexualidad'],
+  10: ['espermicida'],
+  11: ['implante'],
+  12: ['diu','d i u'],
+  13: ['vasectomia'],
+  14: ['pildoras','pildora'],
+  15: ['abstinencia']
+};
+Object.keys(accepted).forEach(k=> accepted[k] = Array.from(new Set(accepted[k].map(normalize))));
+const replacements = {
+  1:'D I A F R A G M A S',2:'A N I L L O',3:'P A S T I L L A S',4:'I N Y E C C I O N',
+  5:'I N F E C C I O N',6:'C O N D O N',7:'C A L E N D A R I O',8:'P A R C H E',9:'S E X U A L I D A D',
+  10:'E S P E R M I C I D A',11:'I M P L A N T E',12:'D I U',13:'V A S E C T O M I A',14:'P I L D O R A S',15:'A B S T I N E N C I A'
+};
+const clues = {
+1:'dispositivo de silicona con forma de cúpula que se inserta en la vagina',
+2:'método anticonceptivo femenino flexible que va dentro de la vagina',
+3:'se toman el día después de tener relaciones sexuales, son de emergencia',
+4:'método anticonceptivo hormonal que espesa el moco cervical y se aplica cada 3 meses',
+5:'cuando ingresa un germen o agente patógeno genera una...',
+6:'funda delgada, generalmente de látex que se coloca sobre el pene',
+7:'método basado en registrar las fechas de la menstruación y calcular días fértiles',
+8:'método de prevención que libera hormonas a través de la piel',
+9:'es el modo en que cada persona experimenta el amor, el deseo y el afecto',
+10:'sustancia química utilizada que destruye los espermatozoides',
+11:'dispositivo chico similar a una varilla flexible que se inserta debajo de la piel',
+12:'dispositivo chico de plástico en forma de "T" que se inserta en el útero',
+13:'consiste en una cirugía para cortar o bloquear los conductos deferentes masculinos',
+14:'se toman todos los días e inhibe la ovulación',
+15:'consiste decidir de no tener relaciones sexuales'
+};
+const initial = {
+  A:'_ _ A _ _ _ _ _ _',N:'_ N _ _ _',T:'_ _ _ T _ _ _ _ _',I1:'I _ _ _ _ _ _ _ _',
+  C:'_ _ _ _ C _ _ _ _',O:'_ O _ _ _ _',N1:'_ _ _ _ N _ _ _ _ _',C1:'_ _ _ C _ _',
+  E:'_ E _ _ _ _ _ _ _ _',P1:'_ _ P _ _ _ _ _ _ _ _',T1:'_ _ _ _ _ _ T _',I2:'_ I _',V:'V _ _ _ _ _ _ _ _ _',
+  O1:'_ _ _ _ O _ _ _',S:'_ _ S _ _ _ _ _ _ _ _'
+};
+let state = {...initial, solvedCount:0, surrendered:false};
+let stats = {attempts:0,correct:0,incorrect:0,startedAt:null,perWordAttempts:{}};
+const entriesEl = document.getElementById('entries');
+const controlsTop = document.getElementById('controlsTop');
+const cluesEl = document.getElementById('clues');
+const logEl = document.getElementById('log');
+const modalBack = document.getElementById('modalBack');
+const modalNum = document.getElementById('modalNum');
+const modalClue = document.getElementById('modalClue');
+const answerInput = document.getElementById('answerInput');
+const submitAnswer = document.getElementById('submitAnswer');
+const cancelBtn = document.getElementById('cancelBtn');
+const modalMsg = document.getElementById('modalMsg');
+const statusEl = document.getElementById('status');
+const statAttempts = document.getElementById('statAttempts');
+const statCorrect = document.getElementById('statCorrect');
+const statIncorrect = document.getElementById('statIncorrect');
+const statAccuracy = document.getElementById('statAccuracy');
+const progressFill = document.getElementById('progressFill');
+const startBtn = document.getElementById('startBtn');
+const rulesBtn = document.getElementById('rulesBtn');
+const surrenderBtn = document.getElementById('surrenderBtn');
+const resetBtn = document.getElementById('resetBtn');
+function renderEntries(){
+  entriesEl.innerHTML='';
+  const fixedList = [
+    {n:1,key:'A'},{n:2,key:'N'},{n:3,key:'T'},{n:4,key:'I1'},
+    {n:5,key:'C'},{n:6,key:'O'},{n:7,key:'N1'},{n:8,key:'C1'},
+    {n:9,key:'E'},{n:10,key:'P1'},{n:11,key:'T1'},{n:12,key:'I2'},
+    {n:13,key:'V'},{n:14,key:'O1'},{n:15,key:'S'}
+  ];
+  fixedList.forEach(item=>{
+    const d = document.createElement('div');
+    d.className='entry';
+    d.setAttribute('role','button');
+    d.tabIndex = 0;
+    d.innerHTML = `<div class="num">#${item.n}</div><div class="val" id="val-${item.key}">${state[item.key]}</div>`;
+    d.addEventListener('click', ()=>openModal(item.n));
+    d.addEventListener('keydown', (e)=>{ if(e.key==='Enter') openModal(item.n); });
+    entriesEl.appendChild(d);
+  });
+}
+function renderClues(){
+  cluesEl.innerHTML='';
+  for(let i=1;i<=15;i++){
+    const el = document.createElement('div');
+    el.className='clue';
+    el.textContent = `${i}. ${clues[i]}`;
+    cluesEl.appendChild(el);
+  }
+}
+function updateStatsUI(){
+  statAttempts.textContent = stats.attempts;
+  statCorrect.textContent = stats.correct;
+  statIncorrect.textContent = stats.incorrect;
+  const acc = stats.attempts ? Math.round((stats.correct / stats.attempts)*100) : 0;
+  statAccuracy.textContent = acc + '%';
+  const pct = Math.round((state.solvedCount / 15)*100);
+  progressFill.style.width = pct + '%';
+  progressFill.parentElement.setAttribute('aria-valuenow', pct);
+  statusEl.textContent = state.surrendered ? 'Te rendiste.' : (state.solvedCount>=15 ? 'Felicidades, ganaste!' : `Resueltas: ${state.solvedCount} / 15`);
+  if(state.solvedCount>=15) statusEl.style.color = 'var(--success)';
+}
+function log(msg, type){
+  const d = document.createElement('div');
+  d.textContent = msg;
+  if(type==='err') d.style.color='var(--danger)';
+  if(type==='ok') d.style.color='var(--success)';
+  logEl.appendChild(d);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+let activeNum = null;
+function openModal(p){
+  if(state.surrendered) { log('Juego finalizado. Reinicia para jugar de nuevo.'); return; }
+  if(state.solvedCount>=15) { log('Juego completado.'); return; }
+  activeNum = p;
+  modalNum.textContent = p;
+  modalClue.textContent = clues[p] || '';
+  modalMsg.textContent = '';
+  answerInput.value = '';
+  modalBack.style.display = 'flex';
+  modalBack.setAttribute('aria-hidden','false');
+  setTimeout(()=>answerInput.focus(),120);
+}
+function closeModal(){ modalBack.style.display = 'none'; modalBack.setAttribute('aria-hidden','true'); activeNum = null; }
+function submitModal(){ if(activeNum===null) return; let raw = (answerInput.value||'').trim(); if(raw.length===0){ modalMsg.textContent='Escribí una respuesta.'; modalMsg.className='msg bad'; return; } const norm = normalize(raw); stats.attempts++; stats.perWordAttempts[activeNum] = (stats.perWordAttempts[activeNum]||0) + 1; const list = accepted[activeNum]||[]; if(list.includes(norm)){ stats.correct++; state.solvedCount++; const rep = replacements[activeNum]; switch(activeNum){ case 1: state.A = rep; break; case 2: state.N = rep; break; case 3: state.T = rep; break; case 4: state.I1 = rep; break; case 5: state.C = rep; break; case 6: state.O = rep; break; case 7: state.N1 = rep; break; case 8: state.C1 = rep; break; case 9: state.E = rep; break; case 10: state.P1 = rep; break; case 11: state.T1 = rep; break; case 12: state.I2 = rep; break; case 13: state.V = rep; break; case 14: state.O1 = rep; break; case 15: state.S = rep; break; } log(`Correcto (#${activeNum}): ${raw}`, 'ok'); modalMsg.textContent='Correcto! ✓'; modalMsg.className='msg ok'; updateStatsUI(); renderEntries(); setTimeout(()=>closeModal(),650); } else { stats.incorrect++; log(`Incorrecto (#${activeNum}): ${raw}`, 'err'); modalMsg.textContent='Incorrecto. Probá otra vez.'; modalMsg.className='msg bad'; updateStatsUI(); } }
+function doSurrender(){ if(confirm('¿Querés rendirte? (esto finalizará el juego)')){ state.surrendered = true; updateStatsUI(); log('Usuario se rindió.'); openFinal('sos un pete'); } }
+function openFinal(msg){ modalNum.textContent=''; modalClue.textContent = msg; modalMsg.textContent = ''; answerInput.value = ''; submitAnswer.style.display='none'; cancelBtn.textContent='Cerrar'; showSummary(); modalBack.style.display='flex'; modalBack.setAttribute('aria-hidden','false'); }
+function showSummary(){ const timeElapsed = stats.startedAt ? Math.round((Date.now()-stats.startedAt)/1000) : 0; const hardest = computeHardest(); const summary = `--- RESUMEN ---\nIntentos: ${stats.attempts}\nCorrectas: ${stats.correct}\nIncorrectas: ${stats.incorrect}\nTiempo (s): ${timeElapsed}\nPalabra más difícil (más intentos): ${hardest || 'N/A'}\n`; log(summary); modalMsg.textContent = summary; modalMsg.className='msg'; }
+function computeHardest(){ let max=0, idx=null; for(const k in stats.perWordAttempts){ if(stats.perWordAttempts[k]>max){ max=stats.perWordAttempts[k]; idx=k; } } return idx ? `${idx} (${max} intentos)` : null; }
+function resetGame(){ state = {...initial, solvedCount:0, surrendered:false}; stats = {attempts:0,correct:0,incorrect:0,startedAt:Date.now(),perWordAttempts:{}}; submitAnswer.style.display=''; cancelBtn.textContent='Cancelar'; logEl.innerHTML=''; modalMsg.textContent=''; updateStatsUI(); renderEntries(); renderClues(); }
+submitAnswer.addEventListener('click', submitModal); answerInput.addEventListener('keydown', (e)=>{ if(e.key==='Enter') submitModal(); }); cancelBtn.addEventListener('click', ()=>{ submitAnswer.style.display=''; cancelBtn.textContent='Cancelar'; closeModal(); }); modalBack.addEventListener('click', (e)=>{ if(e.target===modalBack){ submitAnswer.style.display=''; cancelBtn.textContent='Cancelar'; closeModal(); }});
+startBtn.addEventListener('click', ()=>{ if(!stats.startedAt) stats.startedAt = Date.now(); openModal(1); }); rulesBtn.addEventListener('click', ()=>{ alert('Cómo jugar:\\n1) Tocá un número (1-15).\\n2) Escribí la palabra completa.\\n3) 16 = Rendirse.\\n4) El tablero se actualiza cuando acertás.'); }); surrenderBtn.addEventListener('click', doSurrender); resetBtn.addEventListener('click', ()=>{ if(confirm('Reiniciar el juego?')) resetGame(); });
+resetGame(); renderEntries(); renderClues(); updateStatsUI(); log('Juego listo — tocá un número para comenzar.');
+</script>
+</body>
+</html>
