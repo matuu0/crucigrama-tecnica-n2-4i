@@ -1,16 +1,244 @@
-<!DOCTYPE html> <html lang="es"> <head> <meta charset="utf-8" /> <meta name="viewport" content="width=device-width,initial-scale=1" /> <title>TEST — FIX SCROLL</title> <style> body{ margin:0; background:#dff4ff; font-family:Arial;
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crucigrama Interactivo</title>
 
-/* 🔥 FIX IMPORTANTE */
-display:block;
+<!-- Fuente -->
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
 
-padding:20px;
+<style>
+body {
+  margin: 0;
+  padding: 0;
+  background: #d9f2ff;
+  font-family: Poppins, sans-serif;
 }
-.box{
-background:white;
-padding:20px;
-border-radius:10px;
-box-shadow:0 4px 12px rgba(0,0,0,0.15);
+
+/* CONTENEDOR PRINCIPAL */
+.container {
+  max-width: 850px;
+  margin: auto;
+  padding: 20px;
+}
+
+/* TARJETAS */
+.box {
+  background: white;
+  padding: 20px;
+  border-radius: 14px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+  margin-bottom: 25px;
+}
+
+/* TÍTULOS */
+h2, h3 {
+  margin-top: 0;
+  color: #3a69c2;
+  font-weight: 600;
+}
+
+/* CRUCIGRAMA */
+.word {
+  display: flex;
+  justify-content: space-between;
+  background: #eef7ff;
+  padding: 10px 14px;
+  border-radius: 10px;
+  margin-bottom: 8px;
+  font-size: 16px;
+}
+
+/* BOTONES */
+button {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  margin-top: 8px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+#startBtn { background: #7a9cff; color: white; }
+#startBtn:hover { background: #5b7ff5; }
+
+#giveUpBtn { background: #ff7b7b; color: white; }
+#giveUpBtn:hover { background: #e66464; }
+
+#answerBtn { background: #6adf93; color: white; }
+#answerBtn:hover { background: #4abe73; }
+
+/* INPUT */
+input {
+  width: 100%;
+  padding: 12px;
+  margin-top: 10px;
+  border-radius: 10px;
+  border: 2px solid #bcd6ff;
+  font-size: 16px;
 }
 </style>
+</head>
 
-</head> <body> <div class="box"> <h2>PRUEBA DE FIX (VERSIÓN MINI)</h2> <p>Si ves este cuadro desde ARRIBA (sin estar cortado) el FIX funcionó.</p> <p>Luego scrolleá para abajo y confirmá que no desaparece nada.</p> </div> <div style="height:1000px"></div> </body> </html>
+<body>
+
+<div class="container">
+
+  <div class="box">
+    <h2>Crucigrama Interactivo</h2>
+    <p>Seleccioná el número de la palabra, escribí tu respuesta y completá el crucigrama.</p>
+    <button id="startBtn">Comenzar</button>
+  </div>
+
+  <div id="game" style="display:none;">
+
+    <div class="box">
+      <h3>Crucigrama</h3>
+      <div id="crucigrama"></div>
+    </div>
+
+    <div class="box">
+      <h3>Pistas</h3>
+      <div id="pistas"></div>
+    </div>
+
+    <div class="box">
+      <h3>Responder</h3>
+      <label>Número a resolver:</label>
+      <input type="number" id="numInput" min="1" max="15" placeholder="1-15">
+
+      <label>Respuesta:</label>
+      <input type="text" id="answerInput" placeholder="Escribí en minúsculas">
+
+      <button id="answerBtn">Enviar</button>
+      <button id="giveUpBtn">Rendirse</button>
+
+      <p id="feedback" style="font-weight:600; margin-top:10px;"></p>
+    </div>
+
+    <div class="box">
+      <h3>Estadísticas</h3>
+      <p id="stats">Tiempo: 0s • Aciertos: 0/15 • Intentos fallidos: 0</p>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+/* --- PALABRAS --- */
+const words = [
+  "diafragmas","anillo","pastillas","inyeccion","infeccion",
+  "condon","calendario","parche","sexualidad","espermicida",
+  "implante","diu","vasectomia","pildoras","abstinencia"
+];
+
+/* --- PISTAS --- */
+const clues = [
+  "Dispositivo de silicona con forma de cúpula que se inserta en la vagina.",
+  "Método anticonceptivo flexible que va dentro de la vagina.",
+  "Se toman al día siguiente, de emergencia.",
+  "Método hormonal que espesa el moco cervical, dura 3 meses.",
+  "Cuando ingresa un germen o patógeno, genera una...",
+  "Funda delgada que se coloca en el pene.",
+  "Método basado en registrar la menstruación.",
+  "Método que libera hormonas a través de la piel.",
+  "Modo en que una persona experimenta el amor y el deseo.",
+  "Sustancia química que destruye espermatozoides.",
+  "Varilla flexible que se coloca bajo la piel.",
+  "Dispositivo en forma de T que se coloca en el útero.",
+  "Cirugía para cortar los conductos deferentes.",
+  "Se toman todos los días, inhiben la ovulación.",
+  "Decisión de no tener relaciones sexuales."
+];
+
+/* ESTADO */
+let revealed = new Array(15).fill(false);
+let attempts = 0;
+let correct = 0;
+let startTime;
+
+/* DOM */
+const startBtn = document.getElementById("startBtn");
+const game = document.getElementById("game");
+const cruciBox = document.getElementById("crucigrama");
+const pistasBox = document.getElementById("pistas");
+const statsBox = document.getElementById("stats");
+const feedback = document.getElementById("feedback");
+
+/* INICIO */
+startBtn.onclick = () => {
+  game.style.display = "block";
+  startBtn.style.display = "none";
+  startTime = Date.now();
+  renderCruci();
+  renderClues();
+};
+
+/* MOSTRAR CRUCIGRAMA */
+function renderCruci(){
+  cruciBox.innerHTML = "";
+  for(let i=0;i<15;i++){
+    let text = revealed[i] ? words[i].toUpperCase().split("").join(" ") : "_ ".repeat(words[i].length);
+    cruciBox.innerHTML += `<div class="word"><b>${i+1}.</b> ${text}</div>`;
+  }
+}
+
+function renderClues(){
+  pistasBox.innerHTML = "";
+  clues.forEach((c,i)=>{
+    pistasBox.innerHTML += `<p><b>${i+1}.</b> ${c}</p>`;
+  });
+}
+
+/* RESPUESTA */
+document.getElementById("answerBtn").onclick = ()=>{
+  let num = parseInt(document.getElementById("numInput").value);
+  let ans = document.getElementById("answerInput").value.trim().toLowerCase();
+
+  if(num<1 || num>15){
+    feedback.textContent = "Número inválido.";
+    return;
+  }
+  if(ans===""){
+    feedback.textContent = "Escribí una respuesta.";
+    return;
+  }
+
+  if(ans === words[num-1]){
+    revealed[num-1] = true;
+    correct++;
+    feedback.textContent = "¡Correcto!";
+  } else {
+    attempts++;
+    feedback.textContent = "Incorrecto.";
+  }
+
+  renderCruci();
+  updateStats();
+
+  if(correct === 15){
+    feedback.textContent = "¡Completaste el crucigrama! Máquina.";
+  }
+};
+
+function updateStats(){
+  let t = Math.floor((Date.now()-startTime)/1000);
+  statsBox.textContent = `Tiempo: ${t}s • Aciertos: ${correct}/15 • Intentos fallidos: ${attempts}`;
+}
+
+/* RENDIRSE */
+document.getElementById("giveUpBtn").onclick = ()=>{
+  for(let i=0;i<15;i++) revealed[i] = true;
+  correct = 15;
+  renderCruci();
+  updateStats();
+  feedback.textContent = "Te rendiste 😭";
+};
+</script>
+</body>
+</html>
