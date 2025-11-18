@@ -2,8 +2,8 @@
 <html lang="es">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Crucigrama — Juego público (Celeste)</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Crucigrama — Juego público (Celeste) - Responsive</title>
 <link rel="icon" href="data:;base64,iVBORw0KGgo=">
 <style>
 :root{
@@ -21,36 +21,96 @@
 *{box-sizing:border-box}
 html,body{height:100%}
 body{
-  margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;
-  background:linear-gradient(180deg,var(--bg),#dff4ff);color:#07304a;
-  display:flex;align-items:center;justify-content:center;padding:18px;
+  margin:0;
+  font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;
+  background:linear-gradient(180deg,var(--bg),#dff4ff);
+  color:#07304a;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:14px;               /* reduced default padding */
+  -webkit-font-smoothing:antialiased;
+  -webkit-text-size-adjust:100%;
 }
-.wrap{width:100%;max-width:1100px;border-radius:16px;background:var(--card);padding:18px;box-shadow:var(--shadow);}
+
+/* Outer card */
+.wrap{
+  width:100%;
+  max-width:1100px;
+  border-radius:16px;
+  background:var(--card);
+  padding:18px;
+  box-shadow:var(--shadow);
+  margin:0 auto;
+}
+
+/* header */
 header{display:flex;align-items:center;justify-content:space-between;gap:12px}
 h1{font-size:20px;margin:0;color:#05293e}
 .subtitle{color:var(--muted);font-size:13px}
-.grid{display:grid;grid-template-columns:1fr 340px;gap:16px;margin-top:12px}
-@media(max-width:880px){.grid{grid-template-columns:1fr}}
-.board{background:linear-gradient(180deg,#ffffff,#f6fdff);padding:14px;border-radius:12px;border:1px solid rgba(8,58,86,0.04)}
-.entries{display:flex;flex-wrap:wrap;gap:10px}
+
+/* main grid */
+.grid{
+  display:grid;
+  grid-template-columns:1fr 340px;
+  gap:16px;
+  margin-top:12px;
+}
+
+/* board */
+.board{
+  background:linear-gradient(180deg,#ffffff,#f6fdff);
+  padding:14px;border-radius:12px;border:1px solid rgba(8,58,86,0.04);
+}
+
+/* entries list: flexible, but mobile-friendly */
+.entries{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  align-items:stretch;
+}
+
+/* each entry card */
 .entry{
   background:linear-gradient(180deg,#fbfeff,#f0fbff);
   border:1px solid rgba(10,74,110,0.04);
-  padding:10px 12px;border-radius:10px;min-width:110px;flex:1 1 150px;
-  text-align:center;font-weight:700;color:#03314a;cursor:pointer;transition:transform .12s ease,box-shadow .12s ease;
+  padding:12px 14px;
+  border-radius:10px;
+  /* remove hard min-width so it can shrink on mobile */
+  min-width:0;
+  flex:1 1 150px;
+  text-align:center;
+  font-weight:700;
+  color:#03314a;
+  cursor:pointer;
+  transition:transform .12s ease,box-shadow .12s ease;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
 }
 .entry:hover{transform:translateY(-4px);box-shadow:0 8px 18px rgba(46,154,217,0.08)}
 .entry .num{font-size:12px;color:var(--muted);opacity:.95}
-.entry .val{margin-top:8px;letter-spacing:2px;font-size:15px}
+.entry .val{margin-top:8px;letter-spacing:2px;font-size:15px;word-break:break-word;}
+
+/* controls and buttons */
 .controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-.btn{background:var(--accent);border:none;color:white;padding:10px 12px;border-radius:10px;cursor:pointer;font-weight:700;box-shadow:0 6px 14px rgba(46,154,217,0.12)}
+.btn{
+  background:var(--accent);border:none;color:white;padding:10px 12px;border-radius:10px;cursor:pointer;font-weight:700;
+  box-shadow:0 6px 14px rgba(46,154,217,0.12);
+  min-width:88px;
+}
 .btn.ghost{background:transparent;border:1px dashed rgba(7,48,74,0.06);color:var(--accent-2);box-shadow:none;font-weight:600}
 .btn.surrender{background:#ffb4b4;color:#7a1b1b}
 .small{font-size:13px;color:var(--muted)}
+
+/* right panel */
 .panel{background:linear-gradient(180deg,#f7feff,#f0fbff);padding:12px;border-radius:12px;border:1px solid rgba(10,74,110,0.03)}
 .hintTitle{font-weight:800;margin-bottom:8px;color:#06314a}
 .clue{font-size:14px;color:#084159;margin-bottom:8px}
 .log{background:rgba(5,40,60,0.03);padding:8px;border-radius:8px;min-height:120px;max-height:280px;overflow:auto;font-size:13px;color:#043446}
+
+/* modal */
 .modalBack{position:fixed;inset:0;background:rgba(2,14,20,0.35);display:none;align-items:center;justify-content:center;padding:12px;z-index:80}
 .modal{width:100%;max-width:520px;background:var(--card);padding:18px;border-radius:14px;border:1px solid rgba(8,58,86,0.06);box-shadow:var(--shadow)}
 .modal h3{margin:0 0 8px}
@@ -60,14 +120,45 @@ input[type="text"]{flex:1;padding:10px;border-radius:10px;border:1px solid rgba(
 .msg{font-size:14px;margin-top:8px}
 .msg.ok{color:var(--success)}
 .msg.bad{color:var(--danger)}
+
+/* stats */
 .stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
 .statCard{background:linear-gradient(180deg,#ffffff,#f6fdff);padding:10px;border-radius:10px;border:1px solid rgba(8,58,86,0.03);text-align:center}
 .statCard .num{font-weight:800;font-size:18px;color:#023047}
 .statCard .label{font-size:12px;color:var(--muted)}
+
+/* progress */
 .progressWrap{margin-top:12px}
 .progressBar{height:12px;background:rgba(2,54,86,0.06);border-radius:999px;overflow:hidden}
 .progressFill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-2));width:0%;transition:width .4s ease}
+
+/* footer */
 footer{margin-top:12px;color:var(--muted);font-size:13px;text-align:center}
+
+/* ========== MOBILE / SMALL SCREENS ========== */
+@media (max-width:880px){
+  body{padding:8px;}                 /* reduce page padding on small screens */
+  .wrap{padding:12px;border-radius:12px;max-width:980px;}
+  .grid{grid-template-columns:1fr;gap:12px;}
+  .entries{flex-direction:column;}   /* stack entries vertically on mobile */
+  .entry{flex:0 0 auto;width:100%;text-align:left;padding:12px;border-radius:10px;display:block;}
+  .entry .num{ text-align:left }
+  .entry .val{ text-align:left }
+  .controls{justify-content:flex-start}
+  .btn{min-width:0;padding:10px 12px}
+  .panel{padding:10px}
+  .statCard .num{font-size:16px}
+  .progressWrap{margin-top:10px}
+}
+
+/* extra small phones */
+@media (max-width:420px){
+  h1{font-size:18px}
+  .entry{padding:10px}
+  .subtitle{font-size:12px}
+  input[type="text"]{font-size:14px;padding:8px}
+  .btn{padding:9px 10px;font-size:14px}
+}
 </style>
 </head>
 <body>
@@ -158,6 +249,8 @@ footer{margin-top:12px;color:var(--muted);font-size:13px;text-align:center}
   </div>
 
 <script>
+// (El mismo script que ya tenías; lo pegué aquí para que funcione tal cual)
+// Normalización
 function normalize(s){
   if(!s) return '';
   s = s.normalize('NFKD').replace(/[\u0300-\u036f]/g,'');
@@ -213,8 +306,8 @@ const initial = {
 };
 let state = {...initial, solvedCount:0, surrendered:false};
 let stats = {attempts:0,correct:0,incorrect:0,startedAt:null,perWordAttempts:{}};
+
 const entriesEl = document.getElementById('entries');
-const controlsTop = document.getElementById('controlsTop');
 const cluesEl = document.getElementById('clues');
 const logEl = document.getElementById('log');
 const modalBack = document.getElementById('modalBack');
@@ -230,10 +323,12 @@ const statCorrect = document.getElementById('statCorrect');
 const statIncorrect = document.getElementById('statIncorrect');
 const statAccuracy = document.getElementById('statAccuracy');
 const progressFill = document.getElementById('progressFill');
+
 const startBtn = document.getElementById('startBtn');
 const rulesBtn = document.getElementById('rulesBtn');
 const surrenderBtn = document.getElementById('surrenderBtn');
 const resetBtn = document.getElementById('resetBtn');
+
 function renderEntries(){
   entriesEl.innerHTML='';
   const fixedList = [
@@ -253,6 +348,7 @@ function renderEntries(){
     entriesEl.appendChild(d);
   });
 }
+
 function renderClues(){
   cluesEl.innerHTML='';
   for(let i=1;i<=15;i++){
@@ -262,6 +358,7 @@ function renderClues(){
     cluesEl.appendChild(el);
   }
 }
+
 function updateStatsUI(){
   statAttempts.textContent = stats.attempts;
   statCorrect.textContent = stats.correct;
@@ -274,6 +371,7 @@ function updateStatsUI(){
   statusEl.textContent = state.surrendered ? 'Te rendiste.' : (state.solvedCount>=15 ? 'Felicidades, ganaste!' : `Resueltas: ${state.solvedCount} / 15`);
   if(state.solvedCount>=15) statusEl.style.color = 'var(--success)';
 }
+
 function log(msg, type){
   const d = document.createElement('div');
   d.textContent = msg;
@@ -282,6 +380,7 @@ function log(msg, type){
   logEl.appendChild(d);
   logEl.scrollTop = logEl.scrollHeight;
 }
+
 let activeNum = null;
 function openModal(p){
   if(state.surrendered) { log('Juego finalizado. Reinicia para jugar de nuevo.'); return; }
@@ -295,16 +394,117 @@ function openModal(p){
   modalBack.setAttribute('aria-hidden','false');
   setTimeout(()=>answerInput.focus(),120);
 }
+
 function closeModal(){ modalBack.style.display = 'none'; modalBack.setAttribute('aria-hidden','true'); activeNum = null; }
-function submitModal(){ if(activeNum===null) return; let raw = (answerInput.value||'').trim(); if(raw.length===0){ modalMsg.textContent='Escribí una respuesta.'; modalMsg.className='msg bad'; return; } const norm = normalize(raw); stats.attempts++; stats.perWordAttempts[activeNum] = (stats.perWordAttempts[activeNum]||0) + 1; const list = accepted[activeNum]||[]; if(list.includes(norm)){ stats.correct++; state.solvedCount++; const rep = replacements[activeNum]; switch(activeNum){ case 1: state.A = rep; break; case 2: state.N = rep; break; case 3: state.T = rep; break; case 4: state.I1 = rep; break; case 5: state.C = rep; break; case 6: state.O = rep; break; case 7: state.N1 = rep; break; case 8: state.C1 = rep; break; case 9: state.E = rep; break; case 10: state.P1 = rep; break; case 11: state.T1 = rep; break; case 12: state.I2 = rep; break; case 13: state.V = rep; break; case 14: state.O1 = rep; break; case 15: state.S = rep; break; } log(`Correcto (#${activeNum}): ${raw}`, 'ok'); modalMsg.textContent='Correcto! ✓'; modalMsg.className='msg ok'; updateStatsUI(); renderEntries(); setTimeout(()=>closeModal(),650); } else { stats.incorrect++; log(`Incorrecto (#${activeNum}): ${raw}`, 'err'); modalMsg.textContent='Incorrecto. Probá otra vez.'; modalMsg.className='msg bad'; updateStatsUI(); } }
+
+function submitModal(){
+  if(activeNum===null) return;
+  let raw = (answerInput.value||'').trim();
+  if(raw.length===0){ modalMsg.textContent='Escribí una respuesta.'; modalMsg.className='msg bad'; return; }
+  const norm = normalize(raw);
+  stats.attempts++;
+  stats.perWordAttempts[activeNum] = (stats.perWordAttempts[activeNum]||0) + 1;
+  const list = accepted[activeNum]||[];
+  if(list.includes(norm)){
+    stats.correct++;
+    state.solvedCount++;
+    const rep = replacements[activeNum];
+    switch(activeNum){
+      case 1: state.A = rep; break;
+      case 2: state.N = rep; break;
+      case 3: state.T = rep; break;
+      case 4: state.I1 = rep; break;
+      case 5: state.C = rep; break;
+      case 6: state.O = rep; break;
+      case 7: state.N1 = rep; break;
+      case 8: state.C1 = rep; break;
+      case 9: state.E = rep; break;
+      case 10: state.P1 = rep; break;
+      case 11: state.T1 = rep; break;
+      case 12: state.I2 = rep; break;
+      case 13: state.V = rep; break;
+      case 14: state.O1 = rep; break;
+      case 15: state.S = rep; break;
+    }
+    log(`Correcto (#${activeNum}): ${raw}`, 'ok');
+    modalMsg.textContent='Correcto! ✓';
+    modalMsg.className='msg ok';
+    updateStatsUI();
+    renderEntries();
+    setTimeout(()=>closeModal(),650);
+  } else {
+    stats.incorrect++;
+    log(`Incorrecto (#${activeNum}): ${raw}`, 'err');
+    modalMsg.textContent='Incorrecto. Probá otra vez.';
+    modalMsg.className='msg bad';
+    updateStatsUI();
+  }
+}
+
 function doSurrender(){ if(confirm('¿Querés rendirte? (esto finalizará el juego)')){ state.surrendered = true; updateStatsUI(); log('Usuario se rindió.'); openFinal('sos un pete'); } }
-function openFinal(msg){ modalNum.textContent=''; modalClue.textContent = msg; modalMsg.textContent = ''; answerInput.value = ''; submitAnswer.style.display='none'; cancelBtn.textContent='Cerrar'; showSummary(); modalBack.style.display='flex'; modalBack.setAttribute('aria-hidden','false'); }
-function showSummary(){ const timeElapsed = stats.startedAt ? Math.round((Date.now()-stats.startedAt)/1000) : 0; const hardest = computeHardest(); const summary = `--- RESUMEN ---\nIntentos: ${stats.attempts}\nCorrectas: ${stats.correct}\nIncorrectas: ${stats.incorrect}\nTiempo (s): ${timeElapsed}\nPalabra más difícil (más intentos): ${hardest || 'N/A'}\n`; log(summary); modalMsg.textContent = summary; modalMsg.className='msg'; }
-function computeHardest(){ let max=0, idx=null; for(const k in stats.perWordAttempts){ if(stats.perWordAttempts[k]>max){ max=stats.perWordAttempts[k]; idx=k; } } return idx ? `${idx} (${max} intentos)` : null; }
-function resetGame(){ state = {...initial, solvedCount:0, surrendered:false}; stats = {attempts:0,correct:0,incorrect:0,startedAt:Date.now(),perWordAttempts:{}}; submitAnswer.style.display=''; cancelBtn.textContent='Cancelar'; logEl.innerHTML=''; modalMsg.textContent=''; updateStatsUI(); renderEntries(); renderClues(); }
-submitAnswer.addEventListener('click', submitModal); answerInput.addEventListener('keydown', (e)=>{ if(e.key==='Enter') submitModal(); }); cancelBtn.addEventListener('click', ()=>{ submitAnswer.style.display=''; cancelBtn.textContent='Cancelar'; closeModal(); }); modalBack.addEventListener('click', (e)=>{ if(e.target===modalBack){ submitAnswer.style.display=''; cancelBtn.textContent='Cancelar'; closeModal(); }});
-startBtn.addEventListener('click', ()=>{ if(!stats.startedAt) stats.startedAt = Date.now(); openModal(1); }); rulesBtn.addEventListener('click', ()=>{ alert('Cómo jugar:\\n1) Tocá un número (1-15).\\n2) Escribí la palabra completa.\\n3) 16 = Rendirse.\\n4) El tablero se actualiza cuando acertás.'); }); surrenderBtn.addEventListener('click', doSurrender); resetBtn.addEventListener('click', ()=>{ if(confirm('Reiniciar el juego?')) resetGame(); });
-resetGame(); renderEntries(); renderClues(); updateStatsUI(); log('Juego listo — tocá un número para comenzar.');
+
+function openFinal(msg){
+  modalNum.textContent='';
+  modalClue.textContent = msg;
+  modalMsg.textContent = '';
+  answerInput.value = '';
+  submitAnswer.style.display='none';
+  cancelBtn.textContent='Cerrar';
+  showSummary();
+  modalBack.style.display='flex';
+  modalBack.setAttribute('aria-hidden','false');
+}
+
+function showSummary(){
+  const timeElapsed = stats.startedAt ? Math.round((Date.now()-stats.startedAt)/1000) : 0;
+  const hardest = computeHardest();
+  const summary = `--- RESUMEN ---
+Intentos: ${stats.attempts}
+Correctas: ${stats.correct}
+Incorrectas: ${stats.incorrect}
+Tiempo (s): ${timeElapsed}
+Palabra más difícil (más intentos): ${hardest || 'N/A'}
+`;
+  log(summary);
+  modalMsg.textContent = summary;
+  modalMsg.className='msg';
+}
+
+function computeHardest(){
+  let max=0, idx=null;
+  for(const k in stats.perWordAttempts){
+    if(stats.perWordAttempts[k]>max){ max=stats.perWordAttempts[k]; idx=k; }
+  }
+  return idx ? `${idx} (${max} intentos)` : null;
+}
+
+function resetGame(){
+  state = {...initial, solvedCount:0, surrendered:false};
+  stats = {attempts:0,correct:0,incorrect:0,startedAt:Date.now(),perWordAttempts:{}};
+  submitAnswer.style.display='';
+  cancelBtn.textContent='Cancelar';
+  logEl.innerHTML='';
+  modalMsg.textContent='';
+  updateStatsUI();
+  renderEntries();
+  renderClues();
+}
+
+submitAnswer.addEventListener('click', submitModal);
+answerInput.addEventListener('keydown', (e)=>{ if(e.key==='Enter') submitModal(); });
+cancelBtn.addEventListener('click', ()=>{ submitAnswer.style.display=''; cancelBtn.textContent='Cancelar'; closeModal(); });
+modalBack.addEventListener('click', (e)=>{ if(e.target===modalBack){ submitAnswer.style.display=''; cancelBtn.textContent='Cancelar'; closeModal(); }});
+
+startBtn.addEventListener('click', ()=>{ if(!stats.startedAt) stats.startedAt = Date.now(); openModal(1); });
+rulesBtn.addEventListener('click', ()=>{ alert('Cómo jugar:\n1) Tocá un número (1-15).\n2) Escribí la palabra completa.\n3) 16 = Rendirse.\n4) El tablero se actualiza cuando acertás.'); });
+surrenderBtn.addEventListener('click', doSurrender);
+resetBtn.addEventListener('click', ()=>{ if(confirm('Reiniciar el juego?')) resetGame(); });
+
+resetGame();
+renderEntries();
+renderClues();
+updateStatsUI();
+log('Juego listo — tocá un número para comenzar.');
 </script>
 </body>
 </html>
